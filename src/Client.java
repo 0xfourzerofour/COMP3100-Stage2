@@ -193,7 +193,7 @@ public class Client {
         		serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
 
         		 if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
-             		if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
+             		if((serverCpuCores == bfCore && serverTime < bfTime)|| serverCpuCores < bfCore  ) {
              			finalServer = serverType; 
              			finalServerID = serverID; 
              			bfCore = serverCpuCores; 

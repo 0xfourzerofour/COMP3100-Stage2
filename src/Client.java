@@ -67,15 +67,16 @@ public class Client {
                         if(algo == "bf") {
                         	//function call for best fit
                       
-                        	bfAlgo();
+                        	bfAlgo("noRead");
                         }
                         sendToServer("OK");
                     }
                     
                     if(bfCore == max && algo == "bf") {
                   
-                    	bfAlgoXML();
+                    	bfAlgo("readXML");
                     }
+                    
                     sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
 
                   jobCount++;
@@ -178,19 +179,8 @@ public class Client {
    
     }
     
-    public void bfAlgo() { 	
-        if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
-            		if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
-            			finalServer = serverType; 
-            			finalServerID = serverID; 
-            			bfCore = serverCpuCores; 
-            			bfTime = serverTime; 
-            		}
-            	}
-    }
-    
-    
-    public void bfAlgoXML() {
+    public void bfAlgo(String x) {
+    	if(x == "readXML") {
     	try {
     		NodeList xml = readFile(); 
         	
@@ -202,16 +192,36 @@ public class Client {
         		serverMemory = Integer.parseInt(xml.item(i).getAttributes().item(4).getNodeValue());
         		serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
 
-        	bfAlgo();
+        		 if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
+             		if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
+             			finalServer = serverType; 
+             			finalServerID = serverID; 
+             			bfCore = serverCpuCores; 
+             			bfTime = serverTime; 
+             		}
+             	}
         	
         	}
     		
     	} catch (Exception e) {
     		e.printStackTrace();
     	}
-        		
     	
+    	} else {
+    		if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
+         		if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
+         			finalServer = serverType; 
+         			finalServerID = serverID; 
+         			bfCore = serverCpuCores; 
+         			bfTime = serverTime; 
+         		}
+         	}
+    	}
+    	
+       
     }
+    
+   
     
 
     public static void main(String[] args) {

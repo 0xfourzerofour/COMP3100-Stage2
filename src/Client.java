@@ -18,10 +18,20 @@ public class Client {
     private BufferedReader input = null;
     private String input1 = "";
   
-    private int jobCpuCores, jobMemory, jobDisk;
+    private int jobCpuCores, jobMemory, jobDisk, jobSub, jobID, jobTime;
     private String serverType;
+    private int serverTime, serverState, serverCpuCores, serverMemory, serverDisk;
     private int serverID;
     private int jobCount = 0;
+    private int finalServerID = 0; 
+    private String finalServer = "";
+    
+    
+    //Global Variables for BF Algorithm
+    
+    private int max = 2147483647;
+    private int bfCore = max; 
+    private int bfTime = max; 
 
 
     public Client(String algo ,String address, int port) {
@@ -45,17 +55,22 @@ public class Client {
                     sendToServer("REDY");
                 } else if (input1.startsWith("JOBN")) {
                     jobRecieve();
-                    sendToServer("RESC Avail" + " " + jobCpuCores  + " " +  jobMemory  + " " +  jobDisk);
+                    sendToServer("RESC All");
                     
                     if(newStatus("DATA")) {
                         sendToServer("OK");
                     }
 
                     while (!newStatus(".")) {
-                        serverRecieve();    
+                        serverRecieve();
+                        
+                        if(algo == "bf") {
+                        	//function call for best fit
+                        	bfAlgo();
+                        }
                         sendToServer("OK");
                     }
-                    sendToServer("SCHD " + jobCount + " " + serverType + " " + serverID);
+                    sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
 
                   jobCount++;
                 } 
@@ -69,15 +84,24 @@ public class Client {
 
     public void jobRecieve() {
         String[] jobInput = input1.split("\\s+");
+        jobSub = Integer.parseInt(jobInput[1]); 
+        jobID = Integer.parseInt(jobInput[2]); 
+        jobTime = Integer.parseInt(jobInput[3]); 
         jobCpuCores = Integer.parseInt(jobInput[4]);
         jobMemory = Integer.parseInt(jobInput[5]);
         jobDisk = Integer.parseInt(jobInput[6]);
+       
     }
 
     public void serverRecieve() {
         String[] serverInput = input1.split("\\s+");
         serverType = serverInput[0];
         serverID = Integer.parseInt(serverInput[1]);
+        serverState = Integer.parseInt(serverInput[2]);
+        serverTime = Integer.parseInt(serverInput[3]);
+        serverCpuCores = Integer.parseInt(serverInput[4]);
+        serverMemory = Integer.parseInt(serverInput[5]);
+        serverDisk = Integer.parseInt(serverInput[6]);
     }
 
     public void closeConnection() {
@@ -131,7 +155,7 @@ public class Client {
     	NodeList systemXML = null;
     	
     	try {
-    		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse("system.xml"); 
+    		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse("/home/joshua/Downloads/ds-sim/system.xml"); 
         	doc.getDocumentElement().normalize();
         	
         	systemXML = doc.getElementsByTagName("server");
@@ -144,13 +168,18 @@ public class Client {
     		return systemXML;
     	}
     	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
+   
+    }
+    
+    public void bfAlgo() {
+    	if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
+    		if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
+    			finalServer = serverType; 
+    			finalServerID = serverID; 
+    			bfCore = serverCpuCores; 
+    			bfTime = serverTime; 
+    		}
+    	}
     	
     }
     

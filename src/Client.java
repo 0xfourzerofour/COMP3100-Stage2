@@ -29,7 +29,7 @@ public class Client {
     
     //Global Variables for BF Algorithm
     
-    private int max = 2147483647;
+    private final int max = 2147483647;
     private int bfCore = max; 
     private int bfTime = max; 
 
@@ -66,9 +66,15 @@ public class Client {
                         
                         if(algo == "bf") {
                         	//function call for best fit
+                      
                         	bfAlgo();
                         }
                         sendToServer("OK");
+                    }
+                    
+                    if(bfCore == max && algo == "bf") {
+                  
+                    	bfAlgoXML();
                     }
                     sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
 
@@ -90,7 +96,8 @@ public class Client {
         jobCpuCores = Integer.parseInt(jobInput[4]);
         jobMemory = Integer.parseInt(jobInput[5]);
         jobDisk = Integer.parseInt(jobInput[6]);
-       
+        bfCore = max; 
+        bfTime = max; 
     }
 
     public void serverRecieve() {
@@ -171,15 +178,38 @@ public class Client {
    
     }
     
-    public void bfAlgo() {
-    	if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
-    		if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
-    			finalServer = serverType; 
-    			finalServerID = serverID; 
-    			bfCore = serverCpuCores; 
-    			bfTime = serverTime; 
-    		}
+    public void bfAlgo() { 	
+        if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
+            		if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
+            			finalServer = serverType; 
+            			finalServerID = serverID; 
+            			bfCore = serverCpuCores; 
+            			bfTime = serverTime; 
+            		}
+            	}
+    }
+    
+    
+    public void bfAlgoXML() {
+    	try {
+    		NodeList xml = readFile(); 
+        	
+        	for(int i =0 ; i < xml.getLength(); i++) {
+        		serverType = xml.item(i).getAttributes().item(6).getNodeValue(); 
+        		
+        		serverID = 0; 
+        		serverCpuCores = Integer.parseInt(xml.item(i).getAttributes().item(1).getNodeValue());
+        		serverMemory = Integer.parseInt(xml.item(i).getAttributes().item(4).getNodeValue());
+        		serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
+
+        	bfAlgo();
+        	
+        	}
+    		
+    	} catch (Exception e) {
+    		e.printStackTrace();
     	}
+        		
     	
     }
     

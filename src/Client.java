@@ -29,9 +29,9 @@ public class Client {
     
     //Global Variables for BF Algorithm
     
-    private final int max = 2147483647;
-    private int bfCore = max; 
-    private int bfTime = max; 
+    private final int INT_MAX = 2147483647;
+    private int bfCore = INT_MAX; 
+    private int bfTime = INT_MAX; 
 
 
     public Client(String algo ,String address, int port) {
@@ -72,7 +72,7 @@ public class Client {
                         sendToServer("OK");
                     }
                     
-                    if(bfCore == max && algo == "bf") {
+                    if(bfCore == INT_MAX && algo == "bf") {
                   
                     	bfAlgo("readXML");
                     }
@@ -97,8 +97,8 @@ public class Client {
         jobCpuCores = Integer.parseInt(jobInput[4]);
         jobMemory = Integer.parseInt(jobInput[5]);
         jobDisk = Integer.parseInt(jobInput[6]);
-        bfCore = max; 
-        bfTime = max; 
+        bfCore = INT_MAX; 
+        bfTime = INT_MAX; 
     }
 
     public void serverRecieve() {

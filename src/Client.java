@@ -18,7 +18,7 @@ public class Client {
     private int jobCount = 0;
 
 
-    public Client(String address, int port) {
+    public Client(String algo ,String address, int port) {
         try {
         	
         	 try {
@@ -120,8 +120,14 @@ public class Client {
     }
 
     public static void main(String[] args) {
+    	
+    	String algo = "bf"; 
+    	
+    	if(args.length > 1 && args[0] == "-a") {
+    		algo = args[1]; 
+    	}
 
-        Client client = new Client("127.0.0.1", 50000);
+        Client client = new Client( algo, "127.0.0.1", 50000);
     }
 }
 

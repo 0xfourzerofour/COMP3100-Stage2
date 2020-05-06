@@ -1,6 +1,12 @@
 //Group 16 Vanilla Client DS-SIM
 
 import java.net.Socket;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.io.BufferedReader;
@@ -118,6 +124,36 @@ public class Client {
         }
         return false;
     }
+    
+    @SuppressWarnings("finally")
+	public NodeList readFile() {
+    	
+    	NodeList systemXML = null;
+    	
+    	try {
+    		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse("system.xml"); 
+        	doc.getDocumentElement().normalize();
+        	
+        	systemXML = doc.getElementsByTagName("server");
+        	
+        	
+    		
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	} finally {
+    		return systemXML;
+    	}
+    	
+    	
+    	
+    	
+    	
+    	
+    	
+    	
+    	
+    }
+    
 
     public static void main(String[] args) {
     	

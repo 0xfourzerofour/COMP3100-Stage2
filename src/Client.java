@@ -65,19 +65,19 @@ public class Client {
                     while (!newStatus(".")) {
                         serverRecieve();
                         
-                        if(algo == "bf") {
+                        if(algo.equals("bf")) {
                             //function call for best fit
                             bfAlgo("noRead");
-                        } else if(algo == "ff") {
+                        }  if(algo.equals("ff")){
                             ff("noRead");
                         }
                         sendToServer("OK");
                     }
                     
-                    if(bfCore == INT_MAX && algo == "bf") {
+                    if(bfCore == INT_MAX && algo.equals("bf")) {
                   
                         bfAlgo("readXML");
-                    } else if(algo == "ff") {
+                    }  if(algo.equals("ff")) {
                         ff("readXML");
                     }
                     
@@ -269,7 +269,8 @@ public class Client {
 
         if (args.length == 2 && args[0].equals("-a")) {
             algo = args[1]; 
-        } 
+        }       
+        System.out.println(algo);
         
         Client client = new Client( algo, "127.0.0.1", 50000);
     }

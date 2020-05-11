@@ -1,4 +1,5 @@
 //Group 16 Vanilla Client DS-SIM
+//Note: Testing
 
 import java.net.Socket;
 

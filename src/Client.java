@@ -27,12 +27,22 @@ public class Client {
     private int finalServerID = 0;
     private String finalServer = "";
     
+    //Global Variables for ff Algorithm
+    private int first = 0;
+    private ArrayList<String[]> servers = new ArrayList<String[]>();
+    
     
     //Global Variables for BF Algorithm
     
     private final int INT_MAX = 2147483647;
     private int bfCore = INT_MAX;
     private int bfTime = INT_MAX;
+
+    //Global Variables for WF Algorithm
+    private final int INT_MIN = 0;
+    private int altn = INT_MIN;
+    private int wf = INT_MIN;
+    private boolean worstFound = false;
 
 
     public Client(String algo ,String address, int port) {
@@ -69,17 +79,20 @@ public class Client {
                             //function call for best fit
                             bfAlgo("noRead");
                         }  if(algo.equals("ff")){
-                            ff("noRead");
+                        	if(first == 0) {
+                            	ff();
+                        	}
+                            
                         }
+                       
                         sendToServer("OK");
                     }
                     
                     if(bfCore == INT_MAX && algo.equals("bf")) {
                   
                         bfAlgo("readXML");
-                    }  if(algo.equals("ff")) {
-                        ff("readXML");
-                    }
+                    }  
+                 
                     
                     sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
 
@@ -103,6 +116,9 @@ public class Client {
         jobDisk = Integer.parseInt(jobInput[6]);
         bfCore = INT_MAX;
         bfTime = INT_MAX;
+        wf = INT_MIN;
+        altn = INT_MIN;
+        worstFound = false;
     }
 
     public void serverRecieve() {
@@ -185,69 +201,66 @@ public class Client {
     
     
     // do this for ff algorithm
-    public void ff(String x) {
-        if(x == "readXML") {
-        try {
-            NodeList xml = readFile();
-            
-            for(int i = 0; i<xml.getLength(); i++) {
-            serverType = xml.item(i).getAttributes().item(6).getNodeValue();
-            
-            serverID = 0;
-            serverCpuCores = Integer.parseInt(xml.item(i).getAttributes().item(1).getNodeValue());
-            serverMemory = Integer.parseInt(xml.item(i).getAttributes().item(4).getNodeValue());
-            serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
+    public void ff() {    	
+    	ArrayList<String[]> temp = new ArrayList<String[]>();
+        for (int i = 0; i < servers.size(); i++)  {
+            String[] temp2 = servers.get(i);
+                temp.add(temp2); 
+        }
+        System.out.println("Hello");
 
-            
+        servers.clear();
+        servers.addAll(temp);
+    
+        for (int i = 0; i < servers.size(); i++)  {
+            String[] temp2 = servers.get(i);
+            serverType = temp2[0];
+            serverID = Integer.parseInt(temp2[1]);
+            serverCpuCores = Integer.parseInt(temp2[4]);
+            serverMemory = Integer.parseInt(temp2[5]);
+            serverDisk = Integer.parseInt(temp2[6]);
+            System.out.println(serverType);
+ 
             if(jobCpuCores <= serverCpuCores && jobMemory <= serverMemory && jobDisk <= serverDisk) {
                 finalServer = serverType;
                 finalServerID = serverID;
                 System.out.println("First fit");
-                
+                return;
             }
             
             }
-            
  
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        
-        }
+        String[] ffSplit = input1.split("\\s+");
+        servers.add(ffSplit);
     }
     //
     
-    public void bfAlgo(String x) {
-        if(x == "readXML") {
-        try {
-            NodeList xml = readFile();
-            
-            for(int i =0 ; i < xml.getLength(); i++) {
-                serverType = xml.item(i).getAttributes().item(6).getNodeValue();
+    public void algoXML(String xmlAlgo) {
+    	NodeList xml = readFile(); 
+    	
+    	if(xmlAlgo == "bf") {
+    		for(int i = 0; i < xml.getLength(); i++) {
+    			serverType = xml.item(i).getAttributes().item(6).getNodeValue();
                 
                 serverID = 0;
                 serverCpuCores = Integer.parseInt(xml.item(i).getAttributes().item(1).getNodeValue());
                 serverMemory = Integer.parseInt(xml.item(i).getAttributes().item(4).getNodeValue());
                 serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
-
-                 if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
-                     if((serverCpuCores == bfCore && serverTime < bfTime)|| serverCpuCores < bfCore  ) {
-                         finalServer = serverType;
-                         finalServerID = serverID;
-                         bfCore = serverCpuCores;
-                         bfTime = serverTime;
-                     }
-                 }
-            
-            }
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    		}
+    		
+    	}
+ 	
+    }
+    
+    
+    
+    public void bfAlgo(String x) {
+        if(x == "readXML") {
+        algoXML("bf"); 
         
-        } else {
-            if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
+        } 
+            
+        if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
                  if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
                      finalServer = serverType;
                      finalServerID = serverID;
@@ -258,8 +271,9 @@ public class Client {
         }
         
        
-    }
     
+    
+
    
     
 
@@ -275,6 +289,3 @@ public class Client {
         Client client = new Client( algo, "127.0.0.1", 50000);
     }
 }
-
-
-

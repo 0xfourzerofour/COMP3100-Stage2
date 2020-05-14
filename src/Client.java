@@ -1,291 +1,435 @@
-//Group 16 Vanilla Client DS-SIM
-//Note: Testing2
 
-import java.net.Socket;
-import java.util.*;
-import javax.xml.parsers.DocumentBuilderFactory;
+  //Group 16 Vanilla Client DS-SIM
+  //Note: Testing2
 
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
+  import java.net.Socket;
+  import java.util.*;
+  import javax.xml.parsers.DocumentBuilderFactory;
 
-import java.io.PrintWriter;
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+  import org.w3c.dom.Document;
+  import org.w3c.dom.NodeList;
 
-public class Client {
-    private Socket socket            = null;
-    private PrintWriter out = null;
-    private BufferedReader input = null;
-    private String input1 = "";
- 
-    private int jobCpuCores, jobMemory, jobDisk, jobSub, jobID, jobTime;
-    private String serverType;
-    private int serverTime, serverState, serverCpuCores, serverMemory, serverDisk;
-    private int serverID;
-    private int jobCount = 0;
-    private int finalServerID = 0;
-    private String finalServer = "";
-    
-    //Global Variables for ff Algorithm
-    private int first = 0;
-    private ArrayList<String[]> servers = new ArrayList<String[]>();
-    
-    
-    //Global Variables for BF Algorithm
-    
-    private final int INT_MAX = 2147483647;
-    private int bfCore = INT_MAX;
-    private int bfTime = INT_MAX;
+  import java.io.PrintWriter;
+  import java.io.IOException;
+  import java.io.BufferedReader;
+  import java.io.InputStreamReader;
 
-    //Global Variables for WF Algorithm
-    private final int INT_MIN = 0;
-    private int altn = INT_MIN;
-    private int wf = INT_MIN;
-    private boolean worstFound = false;
+  public class Client {
+      private Socket socket            = null;
+      private PrintWriter out = null;
+      private BufferedReader input = null;
+      private String input1 = "";
+   
+      private int jobCpuCores, jobMemory, jobDisk, jobSub, jobID, jobTime;
+      private String serverType;
+      private int serverTime, serverState, serverCpuCores, serverMemory, serverDisk;
+      private int serverID;
+      private int jobCount = 0;
+      private int finalServerID = 0;
+      private String finalServer = "";
+      
+      //allToLargest Variable
+      
+      private int biggestCPU = 0;
+      
+      private ArrayList<String[]> servers = new ArrayList<String[]>();
+      
+      //Global Variables for BF Algorithm
+      
+      private final int INT_MAX = Integer.MAX_VALUE;
+      private int bestFit = INT_MAX;
+      private int minAvail = INT_MAX;
+
+      //Global Variables for WF Algorithm
+      private final int INT_MIN = Integer.MIN_VALUE;
+      private int altFit = INT_MIN;
+      private int worstFit = INT_MIN;
+      private boolean worst = false;
 
 
-    public Client(String algo ,String address, int port) {
-        try {
-            
-             try {
-                 socket = new Socket(address, port);
-                 out = new PrintWriter(socket.getOutputStream());
-                 input = new BufferedReader( new InputStreamReader(socket.getInputStream()));
-                 sendToServer("HELO");
-             } catch(IOException io) {
-                 System.out.println(io);
-             }
- 
-            if(newStatus("OK")) {
-                sendToServer("AUTH " + System.getProperty("user.name"));
-            }
-           
-            while (!newStatus("NONE")){
-                if(currentStatus("OK")) {
-                    sendToServer("REDY");
-                } else if (input1.startsWith("JOBN")) {
-                    jobRecieve();
-                    sendToServer("RESC All");
+      public Client(String algo ,String address, int port) {
+          try {
+              openConnection(address,port); 
+              
+   
+              if(newStatus("OK")) {
+                  sendToServer("AUTH " + System.getProperty("user.name"));
+              }
+             
+              while (!newStatus("NONE")){
+                  if(currentStatus("OK")) {
+                      sendToServer("REDY");
+                  } else if (input1.startsWith("JOBN")) {
+                      jobRecieve();
+                      sendToServer("RESC All");
+                      
+                      if(newStatus("DATA")) {
+                          sendToServer("OK");
+                      }
+
+                      while (!newStatus(".")) {
+                      	
+                          serverRecieve();
+                          if(algo.equals("allToLargest")) {
+                          	 allToLargest();                        	
+                          }
+                          if(algo.equals("wf")) {
+                          	worstFitAlgo("dont_read");
+                          }
+                          if(algo.equals("bf")) {
+                          		 bestFitAlgo("dont_read");
+                         }
+
+                          sendToServer("OK");
+                      }
+                      
+                      if(algo.equals("bf") && bestFit == INT_MAX) {
+                      	bestFitAlgo("read");
+                      	
+                      }
+                      if(algo.contentEquals("wf") && worstFit == INT_MIN && altFit == INT_MIN) {
+                      	worstFitAlgo("read");
+                      }
+                      	
+   
+                      
+                      sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
+                      
+                      
+                      
+                    jobCount++;
                     
-                    if(newStatus("DATA")) {
-                        sendToServer("OK");
-                    }
+                  }
+              
+              }
+              closeConnection();
+          } catch (Exception e) {
+              System.out.println(e);
+          }
+      }
+      
+      
+      //this is the default function that is called 
+      //It checks the server state CPU size agaist a glabal variable biggestCPU. 
+      //if its bigger, then they will change the value of the biggestCPU and 
+      //update the servertype and ID to send back to the server. 
+      public void allToLargest() {
+      	
+      if(biggestCPU < serverCpuCores) {
+      	biggestCPU = serverCpuCores; 
+      	finalServer = serverType; 
+      	finalServerID = serverID; 
+      }
+      	
+      	
+      }
+      
+      public void bestFitAlgo(String readXML) {
+    
+      		//this if statement body checks if the current server that is received after serverReveive()
+      		// has sufficient available resources for the current job to be scheduled
+      		//this body has been ran multiple times it is checking each time if there is
+      		//a server with a lower fitness value
+      		
+   
+      		if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {
+      			if(serverCpuCores < bestFit || (serverCpuCores == bestFit && serverTime < minAvail)) {	
+      				bestFit = serverCpuCores;
+      				minAvail = serverTime;
+      				finalServer = serverType;
+      				finalServerID = serverID; 
+      			}
 
-                    while (!newStatus(".")) {
-                        serverRecieve();
-                        
-                        if(algo.equals("bf")) {
-                            //function call for best fit
-                            bfAlgo("noRead");
-                        }  if(algo.equals("ff")){
-                        	if(first == 0) {
-                            	ff();
-                        	}
-                            
-                        }
-                       
-                        sendToServer("OK");
-                    }
-                    
-                    if(bfCore == INT_MAX && algo.equals("bf")) {
-                  
-                        bfAlgo("readXML");
-                    }  
-                 
-                    
-                    sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
+      		}
 
-                  jobCount++;
-                }
-            }
+      		//this is only called if we need to base the best-fit server on initial resource capacity. 
+      		//e.g if the current server state info does not match the above if statement. 
+      		else if(readXML == "read") {
+      			
+      			//We first call read the information from system.xml using the readFile() function
+      			//after we read the xml, we loop through the nodelist of servers and set the values 
+      			//each iteration as we are not using the data from the current server state.
+      			//each loop, we have the same if body to find the best server based on the initial resource capacity
+      					
+      			NodeList xml = readFile(); 
 
-            closeConnection();
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-    }
+      			for(int i = 0; i < xml.getLength(); i++) {
 
-    public void jobRecieve() {
-        String[] jobInput = input1.split("\\s+");
-        jobSub = Integer.parseInt(jobInput[1]);
-        jobID = Integer.parseInt(jobInput[2]);
-        jobTime = Integer.parseInt(jobInput[3]);
-        jobCpuCores = Integer.parseInt(jobInput[4]);
-        jobMemory = Integer.parseInt(jobInput[5]);
-        jobDisk = Integer.parseInt(jobInput[6]);
-        bfCore = INT_MAX;
-        bfTime = INT_MAX;
-        wf = INT_MIN;
-        altn = INT_MIN;
-        worstFound = false;
-    }
 
-    public void serverRecieve() {
-        String[] serverInput = input1.split("\\s+");
-        serverType = serverInput[0];
-        serverID = Integer.parseInt(serverInput[1]);
-        serverState = Integer.parseInt(serverInput[2]);
-        serverTime = Integer.parseInt(serverInput[3]);
-        serverCpuCores = Integer.parseInt(serverInput[4]);
-        serverMemory = Integer.parseInt(serverInput[5]);
-        serverDisk = Integer.parseInt(serverInput[6]);
-    }
+      				serverType = xml.item(i).getAttributes().item(6).getNodeValue();
+      				
+      				//The xml file does not have serverID so i set to 0
+      				
+      				serverID = 0;  
 
-    public void closeConnection() {
-        try {
-            sendToServer("QUIT");
-            input.close();
-            out.close();
-            socket.close();
-        } catch(IOException io) {
-            System.out.println(io);
-        }
-    }
+      				serverCpuCores = Integer.parseInt(xml.item(i).getAttributes().item(1).getNodeValue());
+      				serverMemory = Integer.parseInt(xml.item(i).getAttributes().item(4).getNodeValue());
+      				serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
+
+      				if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {
+      					if(serverCpuCores < bestFit || (serverCpuCores == bestFit && serverTime < minAvail)) {
+      						bestFit = serverCpuCores;
+      						minAvail = serverTime;
+      						finalServer = serverType;
+      						finalServerID = serverID; 
+      					}
+      				}
+      			}
+      		}
+      }
+      
+
+      
+      // do this for ff algorithm
+      public void ff() {    	
+      	ArrayList<String[]> temp = new ArrayList<String[]>();
+          for (int i = 0; i < servers.size(); i++)  {
+              String[] temp2 = servers.get(i);
+                  temp.add(temp2); 
+          }
+          System.out.println("Hello");
+
+          servers.clear();
+          servers.addAll(temp);
+      
+          for (int i = 0; i < servers.size(); i++)  {
+              String[] temp2 = servers.get(i);
+              serverType = temp2[0];
+              serverID = Integer.parseInt(temp2[1]);
+              serverCpuCores = Integer.parseInt(temp2[4]);
+              serverMemory = Integer.parseInt(temp2[5]);
+              serverDisk = Integer.parseInt(temp2[6]);
+              System.out.println(serverType);
+   
+              if(jobCpuCores <= serverCpuCores && jobMemory <= serverMemory && jobDisk <= serverDisk) {
+                  finalServer = serverType;
+                  finalServerID = serverID;
+                  System.out.println("First fit");
+                  return;
+              }
+              
+              }
+   
+          String[] ffSplit = input1.split("\\s+");
+          servers.add(ffSplit);
+      }
+      //
+      
+      
+      
+      
+      
+      
+      public void worstFitAlgo(String readXML) {
+      	  
+  		//this if statement body checks if the current server that is received after serverReveive()
+  		// has sufficient available resources for the current job to be scheduled
+  		//this body has been ran multiple times it is checking each time if there is
+  		//a server with a lower fitness value
+  		
+
+  		if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {
+  			if(serverCpuCores > worstFit && (serverState == 3 || serverState == 2)) {
+  			
+  				worstFit = serverCpuCores;
+  				worst = true; 
+  				finalServer = serverType;
+  				finalServerID = serverID; 
+  			} else if(!worst && serverCpuCores > altFit) {
+  				altFit = serverCpuCores;
+  				finalServer = serverType;
+  				finalServerID = serverID;
+  			}
+
+  		}
+
+  		//this is only called if we need to base the best-fit server on initial resource capacity. 
+  		//e.g if the current server state info does not match the above if statement. 
+  		else if(readXML == "read") {
+  			
+  			//We first call read the information from system.xml using the readFile() function
+  			//after we read the xml, we loop through the nodelist of servers and set the values 
+  			//each iteration as we are not using the data from the current server state.
+  			//each loop, we have the same if body to find the best server based on the initial resource capacity
+  					
+  			NodeList xml = readFile(); 
+
+  			for(int i = 0; i < xml.getLength(); i++) {
+
+
+  				serverType = xml.item(i).getAttributes().item(6).getNodeValue();
+  				
+  				//The xml file does not have serverID so i set to 0
+  				
+  				serverID = 0;  
+
+  				serverCpuCores = Integer.parseInt(xml.item(i).getAttributes().item(1).getNodeValue());
+  				serverMemory = Integer.parseInt(xml.item(i).getAttributes().item(4).getNodeValue());
+  				serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
+
+  				if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {
+  					if(serverCpuCores > worstFit && (serverState == 3 || serverState == 2)) {
+  					
+  						worstFit = serverCpuCores;
+  						worst = true; 
+  						finalServer = serverType;
+  						finalServerID = serverID; 
+  					} else if(!worst && serverCpuCores > altFit) {
+  						altFit = serverCpuCores;
+  						finalServer = serverType;
+  						finalServerID = serverID;
+  					}
+  				}
+  			}
+  		}
+  }
+      
+      
+
+      //this function takes the input string that is initialized in the 
+      //newStatus() function and read as an input stream from the server
+      // the string that the server sends to the client is split based
+      //on the spaces between the input string 
+      public void jobRecieve() {
+          String[] jobInput = input1.split("\\s+");
+          jobSub = Integer.parseInt(jobInput[1]);
+          jobID = Integer.parseInt(jobInput[2]);
+          jobTime = Integer.parseInt(jobInput[3]);
+          jobCpuCores = Integer.parseInt(jobInput[4]);
+          jobMemory = Integer.parseInt(jobInput[5]);
+          jobDisk = Integer.parseInt(jobInput[6]);
+          bestFit = INT_MAX;
+          minAvail = INT_MAX;
+          worstFit = INT_MIN;
+          altFit = INT_MIN;
+          worst = false;
+      }
+      
+      //this function works the same as the jobInput however it is called
+      //when we get need to get the server state info instead of the job info.  
+      public void serverRecieve() {
+          String[] serverInput = input1.split("\\s+");
+          serverType = serverInput[0];
+          serverID = Integer.parseInt(serverInput[1]);
+          serverState = Integer.parseInt(serverInput[2]);
+          serverTime = Integer.parseInt(serverInput[3]);
+          serverCpuCores = Integer.parseInt(serverInput[4]);
+          serverMemory = Integer.parseInt(serverInput[5]);
+          serverDisk = Integer.parseInt(serverInput[6]);
+      }
+      
+      
+      //close connection just closes all the input and output streams + Socket opened 
+      //in the openConneciton function. 
+      //We use the sendToServer() function to send the string QUIT to end the running process. 
+      public void closeConnection() {
+          try {
+              sendToServer("QUIT");
+              input.close();
+              out.close();
+              socket.close();
+          } catch(IOException io) {
+              System.out.println(io);
+          }
+      }
+      
+      //open connection is very similar to the close connection function
+      //however it opens the socket and input and output streams then sends the string HELO
+      public void openConnection(String address, int port) {
+      	 try {
+               socket = new Socket(address, port);
+               out = new PrintWriter(socket.getOutputStream());
+               input = new BufferedReader( new InputStreamReader(socket.getInputStream()));
+               sendToServer("HELO");
+           } catch(IOException io) {
+               System.out.println(io);
+           }
+      }
+
+     //the sent to server function utilizes PrintWriters write function to 
+      //be able to send messages to the server and then we flush the output stream
+      //so we can get ready to send another message. 
+      public void sendToServer(String x) {
+          out.write(x + "\n");
+          out.flush();
+      }
+
+      //the newStatus function first initializes the input1 variable
+      //and assigns it to the value if the input stream. 
+      //this allows us to read the data that the server is sending to us
+      //after we initialize the variable we call the value of itself so that we can use
+      //it as a conditional while setting the variable at the same time.
+      public boolean newStatus(String x) {
+          
+          try {
+              input1 = input.readLine();
+              
+              if(input1.equals(x)){
+                  return true;
+              }
+              
+              
+          } catch (Exception e) {
+              System.out.println(e);
+          }
+          return false;
+      }
+      
+      //The current status function is the same as the newStatus fucntion, 
+      //however it does not set the value of input1. it only checks to see if it is equal
+      //to the input parameter. 
+      public boolean currentStatus(String x) {
+          try {
+              if(input1.equals(x)){
+                  return true;
+              }
+          } catch (Exception e) {
+              System.out.println(e);
+          }
+          return false;
+      }
+
+      
+      //The readFile function is used to read the value within the system.xml file
+      //we first create an empty nodelist and then use a DOM parser to get the server values from the file
+      //using the "server" tagname
+      @SuppressWarnings("finally")
+      public NodeList readFile() {
+          //initialize the nodelist for the xml reader
+          NodeList systemXML = null;
+          
+          try {
+          	
+              Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse("/home/joshua/Downloads/ds-sim/system.xml");
+              doc.getDocumentElement().normalize();
+              
+              systemXML = doc.getElementsByTagName("server");
+              
+              
+              
+          } catch (Exception e) {
+              e.printStackTrace();
+          } finally {
+              return systemXML;
+          }
+          
+     
+      }
+
+      public static void main(String[] args) {
+          
+      	//default algorithm 
+          String algo = "allToLargest";
+
+          if (args.length == 2 && args[0].equals("-a")) {
+              algo = args[1]; 
+          }       
+        
+          
+          Client client = new Client(algo, "127.0.0.1", 50000);
+      }
+  }
+
+
 
    
-    public void sendToServer(String x) {
-        out.write(x + "\n");
-        out.flush();
-    }
-
-
-    public boolean currentStatus(String x) {
-        try {
-            if(input1.equals(x)){
-                return true;
-            }
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-        return false;
-    }
-
-    public boolean newStatus(String x) {
-        
-        try {
-            input1 = input.readLine();
-            
-            if(input1.equals(x)){
-                return true;
-            }
-            
-            
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-        return false;
-    }
-    
-    @SuppressWarnings("finally")
-    public NodeList readFile() {
-        
-        NodeList systemXML = null;
-        
-        try {
-            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse("/home/peter/Desktop/ds-sim/system.xml");
-            doc.getDocumentElement().normalize();
-            
-            systemXML = doc.getElementsByTagName("server");
-            
-            
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            return systemXML;
-        }
-        
-   
-    }
-    
-    
-    // do this for ff algorithm
-    public void ff() {    	
-    	ArrayList<String[]> temp = new ArrayList<String[]>();
-        for (int i = 0; i < servers.size(); i++)  {
-            String[] temp2 = servers.get(i);
-                temp.add(temp2); 
-        }
-        System.out.println("Hello");
-
-        servers.clear();
-        servers.addAll(temp);
-    
-        for (int i = 0; i < servers.size(); i++)  {
-            String[] temp2 = servers.get(i);
-            serverType = temp2[0];
-            serverID = Integer.parseInt(temp2[1]);
-            serverCpuCores = Integer.parseInt(temp2[4]);
-            serverMemory = Integer.parseInt(temp2[5]);
-            serverDisk = Integer.parseInt(temp2[6]);
-            System.out.println(serverType);
- 
-            if(jobCpuCores <= serverCpuCores && jobMemory <= serverMemory && jobDisk <= serverDisk) {
-                finalServer = serverType;
-                finalServerID = serverID;
-                System.out.println("First fit");
-                return;
-            }
-            
-            }
- 
-        String[] ffSplit = input1.split("\\s+");
-        servers.add(ffSplit);
-    }
-    //
-    
-    public void algoXML(String xmlAlgo) {
-    	NodeList xml = readFile(); 
-    	
-    	if(xmlAlgo == "bf") {
-    		for(int i = 0; i < xml.getLength(); i++) {
-    			serverType = xml.item(i).getAttributes().item(6).getNodeValue();
-                
-                serverID = 0;
-                serverCpuCores = Integer.parseInt(xml.item(i).getAttributes().item(1).getNodeValue());
-                serverMemory = Integer.parseInt(xml.item(i).getAttributes().item(4).getNodeValue());
-                serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
-    		}
-    		
-    	}
- 	
-    }
-    
-    
-    
-    public void bfAlgo(String x) {
-        if(x == "readXML") {
-        algoXML("bf"); 
-        
-        } 
-            
-        if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory ) {
-                 if(serverCpuCores < bfCore || (serverCpuCores == bfCore && serverTime < bfTime)) {
-                     finalServer = serverType;
-                     finalServerID = serverID;
-                     bfCore = serverCpuCores;
-                     bfTime = serverTime;
-                 }
-             }
-        }
-        
-       
-    
-    
-
-   
-    
-
-    public static void main(String[] args) {
-        
-        String algo = "bf";
-
-        if (args.length == 2 && args[0].equals("-a")) {
-            algo = args[1]; 
-        }       
-        System.out.println(algo);
-        
-        Client client = new Client( algo, "127.0.0.1", 50000);
-    }
-}

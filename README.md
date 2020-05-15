@@ -10,7 +10,7 @@ Linux Environment
 
 ## Getting Started
 
-open one command line shell and navigate to the ds-sim directory and run the server
+open one command line shell and navigate to the `ds-sim` directory and run the server
 
 `./ds-server -c <config_file> -n -v all` 
 

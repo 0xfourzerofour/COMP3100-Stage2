@@ -1,29 +1,41 @@
 # COMP3100-Stage2
-Stage 2 for COMP3100 Assignment 1
 
-#How to run implementation?
+One Paragraph of project description goes here
 
-open one command line shell and navigate to the ds-sim directory 
+### Prerequisites
+
+```
+Linux Environment
+```
+
+## Getting Started
+
+open one command line shell and navigate to the ds-sim directory and run the server
 
 `./ds-server -c <config_file> -n -v all` 
 
-open another command line shell 
+open up another command line shell to get ready to run the algorithms
 
-#AllToLargest
+## Running the algoritms
 
-`java Client`
+### allToLargest
+```
+java Client
+```
 
-#BestFit 
+### Best Fit
+```
+java Client -a bf
+```
 
-`java Client -a bf`
+### Worst Fit
+```
+java Client -a wf
+```
 
-#WorstFit 
-
-`java Client -a wf`
-
-#FirstFit 
-
-`java Client -a ff`
-
+### First Fit
+```
+java Client -a ff
+```
 
 

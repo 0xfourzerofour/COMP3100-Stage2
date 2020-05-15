@@ -35,7 +35,9 @@ public class Client {
 
 	private int biggestCPU = 0;
 
-	private ArrayList<String[]> currentServers = new ArrayList<String[]>();
+	private int first = 0; 
+	
+	private ArrayList<String[]> list = new ArrayList<String[]>(); 
 
 	//Global Variables for BF Algorithm
 
@@ -59,17 +61,25 @@ public class Client {
 			}
 
 			while (!newStatus("NONE")){
+				
 				if(currentStatus("OK")) {
 					sendToServer("REDY");
 				} else if (input1.startsWith("JOBN")) {
+					
 					jobRecieve();
 					sendToServer("RESC All");
 
 					if(newStatus("DATA")) {
 						sendToServer("OK");
 					}
+					
+					
 
 					while (!newStatus(".")) {
+						
+						
+							
+					
 
 						serverRecieve();
 						if(algo.equals("allToLargest")) {
@@ -83,7 +93,12 @@ public class Client {
 						}
 
 						if(algo.equals("ff")) {
-							saveServerList();
+							
+							firstFitSaveList(); 
+							firstFit();
+								
+							
+							
 						}
 
 						sendToServer("OK");
@@ -96,14 +111,18 @@ public class Client {
 					if(algo.contentEquals("wf") && worstFit == INT_MIN && altFit == INT_MIN && worst == false) {
 						worstFitAlgo("read");
 						}
-
-				
-					if(algo.equals("ff")) {
+					
+					if(algo.equals("ff") && first == 0) {
 						firstFitAlgo();
 					}
+
+
 					sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
 					jobCount++;
-				}
+					
+					first = 0;
+				
+		}
 			}
 			closeConnection();
 	}
@@ -177,35 +196,50 @@ public class Client {
 			}
 		}
 	}
-
-	public void saveServerList() {
-		String[] serverInput = input1.split("\\s+");
-		currentServers.add(serverInput); 
+	
+	public void firstFit() {
+		
+		if(serverTime != -1) {			
+			if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {				
+				if(first == 0) {					
+					finalServer = serverType;
+					finalServerID = serverID;
+					first =1;				
+				}		
+		}
+			
+		}
+		
 	}
 
+
+	public void firstFitSaveList() {
+		String[] jobInput = input1.split("\\s+");
+		list.add(jobInput);
+	}
 
 
 	// do this for ff algorithm
-	public void firstFitAlgo() {  
-
-		for (int i = 0; i < currentServers.size(); i++)  {
-			String[] temp2 = currentServers.get(i);
-			serverType = temp2[0];
-			serverID = Integer.parseInt(temp2[1]);
-			serverCpuCores = Integer.parseInt(temp2[4]);
-			serverMemory = Integer.parseInt(temp2[5]);
-			serverDisk = Integer.parseInt(temp2[6]);
-
-
-			if(jobCpuCores <= serverCpuCores && jobMemory <= serverMemory && jobDisk <= serverDisk) {
-				finalServer = serverType;
-				finalServerID = serverID;
-				return;
-			}
-
+	public void firstFitAlgo()  {
+		
+		for(int i = 0; i < list.size(); i++) {
+				serverType = list.get(i)[0];	
+				serverCpuCores = Integer.parseInt(list.get(i)[4]);	
+				serverDisk = Integer.parseInt(list.get(i)[6]);		
+				serverMemory = Integer.parseInt(list.get(i)[5]);			
+				serverID =  Integer.parseInt(list.get(i)[1]);
+				serverState = Integer.parseInt(list.get(i)[2]);
+				
+				if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {
+						finalServer = serverType;
+						finalServerID = serverID;
+						return;				
+				}	
 		}
 
 	}
+	
+
 
 	//This algorithm has a very similar implementation to the bestFit 
 	//algorithm however we are now looking for the worst server to send 

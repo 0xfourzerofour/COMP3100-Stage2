@@ -14,7 +14,7 @@ open one command line shell and navigate to the ds-sim directory and run the ser
 
 `./ds-server -c <config_file> -n -v all` 
 
-open up another command line shell to get ready to run the algorithms
+open up another command line shell tab in the same directory to get ready to run the algorithms
 
 ## Running the algoritms
 

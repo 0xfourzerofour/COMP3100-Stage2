@@ -36,8 +36,6 @@ public class Client {
 	private int biggestCPU = 0;
 
 	private int first = 0; 
-	
-	private ArrayList<String[]> list = new ArrayList<String[]>(); 
 
 	//Global Variables for BF Algorithm
 
@@ -93,11 +91,9 @@ public class Client {
 						}
 
 						if(algo.equals("ff")) {
-							
-							firstFitSaveList(); 
+
 							firstFit();
-								
-							
+						
 							
 						}
 
@@ -213,28 +209,31 @@ public class Client {
 	}
 
 
-	public void firstFitSaveList() {
-		String[] jobInput = input1.split("\\s+");
-		list.add(jobInput);
-	}
 
-
-	// do this for ff algorithm
-	public void firstFitAlgo()  {
+	public void firstFitAlgo() throws SAXException, IOException, ParserConfigurationException  {
 		
-		for(int i = 0; i < list.size(); i++) {
-				serverType = list.get(i)[0];	
-				serverCpuCores = Integer.parseInt(list.get(i)[4]);	
-				serverDisk = Integer.parseInt(list.get(i)[6]);		
-				serverMemory = Integer.parseInt(list.get(i)[5]);			
-				serverID =  Integer.parseInt(list.get(i)[1]);
-				serverState = Integer.parseInt(list.get(i)[2]);
+		NodeList xml = readFile(); 
+
+		for(int i = 0; i < xml.getLength(); i++) {
+
+
+			serverType = xml.item(i).getAttributes().item(6).getNodeValue();
+
+			//The xml file does not have serverID so i set to 0
+
+			serverID = 0;  
+
+			serverCpuCores = Integer.parseInt(xml.item(i).getAttributes().item(1).getNodeValue());
+			serverMemory = Integer.parseInt(xml.item(i).getAttributes().item(4).getNodeValue());
+			serverDisk = Integer.parseInt(xml.item(i).getAttributes().item(2).getNodeValue());
+
+			if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {
+
+					finalServer = serverType;
+					finalServerID = serverID; 
+					return;
 				
-				if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {
-						finalServer = serverType;
-						finalServerID = serverID;
-						return;				
-				}	
+			}
 		}
 
 	}

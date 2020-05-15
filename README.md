@@ -1,6 +1,6 @@
 # COMP3100-Stage2
 
-One Paragraph of project description goes here
+This Repository is our implementation of 4 different scheduling algorithms for jobs that have varying resource needs to be run on servers with various different resource capacities
 
 ### Prerequisites
 

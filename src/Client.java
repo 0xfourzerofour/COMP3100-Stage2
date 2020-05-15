@@ -35,6 +35,8 @@ public class Client {
 
 	private int biggestCPU = 0;
 
+	//First Fit Variable
+
 	private int first = 0; 
 
 	//Global Variables for BF Algorithm
@@ -52,80 +54,98 @@ public class Client {
 
 
 	public Client(String algo ,String address, int port) throws UnknownHostException, IOException, SAXException, ParserConfigurationException {
-	
-			openConnection(address,port); 
-			if(newStatus("OK")) {
-				sendToServer("AUTH " + System.getProperty("user.name"));
-			}
-
-			while (!newStatus("NONE")){
-				
-				if(currentStatus("OK")) {
-					sendToServer("REDY");
-				} else if (input1.startsWith("JOBN")) {
-					
-					jobRecieve();
-					sendToServer("RESC All");
-
-					if(newStatus("DATA")) {
-						sendToServer("OK");
-					}
-					
-					
-
-					while (!newStatus(".")) {
-						
-						
-							
-					
-
-						serverRecieve();
-						if(algo.equals("allToLargest")) {
-							allToLargest();                        	
-						}
-						if(algo.equals("wf")) {
-							worstFitAlgo("dont_read");
-						}
-						if(algo.equals("bf")) {
-							bestFitAlgo("dont_read");
-						}
-
-						if(algo.equals("ff")) {
-
-							firstFit();
-						
-							
-						}
-
-						sendToServer("OK");
-					}
-
-					if(algo.equals("bf") && bestFit == INT_MAX) {
-						bestFitAlgo("read");
-
-					}
-					if(algo.contentEquals("wf") && worstFit == INT_MIN && altFit == INT_MIN && worst == false) {
-						worstFitAlgo("read");
-						}
-					
-					if(algo.equals("ff") && first == 0) {
-						firstFitAlgo();
-					}
-
-
-					sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
-					jobCount++;
-					
-					first = 0;
-				
+		//start connection with server
+		openConnection(address,port); 
+		if(newStatus("OK")) {
+			sendToServer("AUTH " + System.getProperty("user.name"));
 		}
+
+		while (!newStatus("NONE")) {
+			if(currentStatus("OK")) {
+				sendToServer("REDY");
+			} else if (input1.startsWith("JOBN")) {
+				//if the input string begins with JOBN, 
+				//read the input line and get job values 
+				jobRecieve();
+
+				//request all information of all servers
+				sendToServer("RESC All");
+				//checks if input is DATA
+				if(newStatus("DATA")) {
+					sendToServer("OK");
+				}
+
+
+				//Loop through all the servers until the input string sent is
+				// . indicating end of server information
+				while (!newStatus(".")) {
+					//read current server state
+					serverRecieve();
+					
+					//default algorithm 
+					if(algo.equals("allToLargest")) {
+						allToLargest();                        	
+					}
+					//if algorithm is wf call the worstFitAlgo
+					if(algo.equals("wf")) {
+						worstFitAlgo("dont_read");
+					}
+					//if algorithm is bf call the bestFitAlgo
+					if(algo.equals("bf")) {
+						bestFitAlgo("dont_read");
+					}
+					//if algorithm is ff call the firstFit
+					if(algo.equals("ff")) {
+
+						firstFit();
+
+
+					}
+					//send ok to to say send next server info
+					sendToServer("OK");
+				}
+				
+				//checks to see if the bestFit value has been changed
+				//if not, call the bestFitAlgo with read to read the initial
+				//server resource capacity
+				if(algo.equals("bf") && bestFit == INT_MAX) {
+					bestFitAlgo("read");
+
+				}
+				//checks to see if the worstFit & altFit values have been changed
+				//if not, call the worstFitAlgo with read to read the initial
+				//server resource capacity
+				if(algo.contentEquals("wf") && worstFit == INT_MIN && altFit == INT_MIN && worst == false) {
+					worstFitAlgo("read");
+				}
+				
+				//check if first has been changed to 1,
+				//if not read initial server resource capacity
+				if(algo.equals("ff") && first == 0) {
+					firstFitAlgo();
+				}
+
+				//scheduling decision
+				sendToServer("SCHD " + jobCount + " " + finalServer + " " + finalServerID);
+				
+				//there is no jobID in the job information sent so we need to count the
+				//jobs that come in and use that for the scheduling decision.
+				jobCount++;
+				
+				//reset the first parameter after each job to make sure the 
+				//firstFit function is reading the current server info
+				//and can schedule accordingly. 
+				first = 0;
+
 			}
-			closeConnection();
+		}
+		//close all open connections with server. 
+		closeConnection();
 	}
 
 
 	//this is the default function that is called 
-	//It checks the server state CPU size agaist a glabal variable biggestCPU. 
+	//It checks the server state CPU size against a global variable biggestCPU. 
 	//if its bigger, then they will change the value of the biggestCPU and 
 	//update the servertype and ID to send back to the server. 
 	public void allToLargest() {
@@ -193,8 +213,18 @@ public class Client {
 		}
 	}
 	
+	
+	//the firstFit function checks the current server state to find the first available server
+	//first we check to see if the serverTime != -1 (server active or not) and then see if the 
+	//server has the capacity to schedule and if it does we set the values of finalServe and finalServerID
+	//to the current server
+	
+	//we then set the value of first to 1 so that whenever this function is called it will only set the values
+	//for the first available server with the right capacity. 
+	
+	//the first variable is reset after every Job is scheduled. 
 	public void firstFit() {
-		
+
 		if(serverTime != -1) {			
 			if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {				
 				if(first == 0) {					
@@ -202,16 +232,18 @@ public class Client {
 					finalServerID = serverID;
 					first =1;				
 				}		
+			}
+
 		}
-			
-		}
-		
+
 	}
 
 
-
+	//The firstFitAlgo is only called if the firstFit function cannot find a server that fits based
+	//on the current server states. When this function is called, we read the server information from
+	// system.xml to find the first available server based on the initial resource capacity. 
 	public void firstFitAlgo() throws SAXException, IOException, ParserConfigurationException  {
-		
+
 		NodeList xml = readFile(); 
 
 		for(int i = 0; i < xml.getLength(); i++) {
@@ -229,15 +261,15 @@ public class Client {
 
 			if(jobCpuCores <= serverCpuCores && jobDisk <= serverDisk && jobMemory <= serverMemory) {
 
-					finalServer = serverType;
-					finalServerID = serverID; 
-					return;
-				
+				finalServer = serverType;
+				finalServerID = serverID; 
+				return;
+
 			}
 		}
 
 	}
-	
+
 
 
 	//This algorithm has a very similar implementation to the bestFit 
@@ -350,19 +382,19 @@ public class Client {
 	//in the openConneciton function. 
 	//We use the sendToServer() function to send the string QUIT to end the running process. 
 	public void closeConnection() throws IOException {
-			sendToServer("QUIT");
-			input.close();
-			out.close();
-			socket.close();
+		sendToServer("QUIT");
+		input.close();
+		out.close();
+		socket.close();
 	}
 
 	//open connection is very similar to the close connection function
 	//however it opens the socket and input and output streams then sends the string HELO
 	public void openConnection(String address, int port) throws UnknownHostException, IOException {
-			socket = new Socket(address, port);
-			out = new PrintWriter(socket.getOutputStream());
-			input = new BufferedReader( new InputStreamReader(socket.getInputStream()));
-			sendToServer("HELO");
+		socket = new Socket(address, port);
+		out = new PrintWriter(socket.getOutputStream());
+		input = new BufferedReader( new InputStreamReader(socket.getInputStream()));
+		sendToServer("HELO");
 	}
 
 	//the sent to server function utilizes PrintWriters write function to 
@@ -379,10 +411,10 @@ public class Client {
 	//after we initialize the variable we call the value of itself so that we can use
 	//it as a conditional while setting the variable at the same time.
 	public boolean newStatus(String x) throws IOException {
-			input1 = input.readLine();
-			if(input1.equals(x)){
-				return true;
-			}
+		input1 = input.readLine();
+		if(input1.equals(x)){
+			return true;
+		}
 		return false;
 	}
 
@@ -390,9 +422,9 @@ public class Client {
 	//however it does not set the value of input1. it only checks to see if it is equal
 	//to the input parameter. 
 	public boolean currentStatus(String x) {
-			if(input1.equals(x)){
-				return true;
-			}
+		if(input1.equals(x)){
+			return true;
+		}
 		return false;
 	}
 
@@ -404,13 +436,13 @@ public class Client {
 		//initialize the nodelist for the xml reader
 		NodeList systemXML = null;
 
-		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse("/home/joshua/Downloads/ds-sim/system.xml");
+		Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse("system.xml");
 		doc.getDocumentElement().normalize();
 
 		systemXML = doc.getElementsByTagName("server");
 
 		return systemXML;
-		
+
 
 
 	}
@@ -419,7 +451,8 @@ public class Client {
 
 		//default algorithm 
 		String algo = "allToLargest";
-
+		
+		//if there is an input parameter, set algo to the input algorithm 
 		if (args.length == 2 && args[0].equals("-a")) {
 			algo = args[1]; 
 		}       
